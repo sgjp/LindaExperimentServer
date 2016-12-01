@@ -4,6 +4,7 @@ import (
 	//"code.google.com/p/go-uuid/uuid"
 	"github.com/pborman/uuid"
 	"sync"
+	//"log"
 )
 
 type TupleSpace interface {
@@ -36,6 +37,7 @@ func (tM *tupleManager) Read(tuple Tuple, receiver chan Tuple) {
 }
 
 func (tM *tupleManager) Take(tuple Tuple, receiver chan Tuple) {
+
 	tM.mutex.Lock()
 	defer tM.mutex.Unlock()
 
@@ -49,6 +51,9 @@ func (tM *tupleManager) Take(tuple Tuple, receiver chan Tuple) {
 			}
 
 			receiver <- t
+
+
+			//log.Printf("Tuple found: %v", t)
 			return
 		}
 	}
@@ -57,10 +62,12 @@ func (tM *tupleManager) Take(tuple Tuple, receiver chan Tuple) {
 }
 
 func (tM *tupleManager) Write(tuple Tuple) {
+	//log.Printf("Outing tuple: %v",tuple)
 	tM.mutex.Lock()
 	defer tM.mutex.Unlock()
 
 	tM.tuples = append(tM.tuples, tuple)
+
 }
 
 func (tM *tupleManager) Len() int {

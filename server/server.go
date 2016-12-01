@@ -5,8 +5,6 @@ import (//"reflect"
 	"log"
 	"github.com/sgjp/go-coap"
 	"net"
-	"bytes"
-	"encoding/gob"
 	"strings"
 	"fmt"
 )
@@ -19,7 +17,7 @@ func StartServer() {
 
 	log.Fatal(coap.ListenAndServeMulticast("udp", "224.0.1.187:5683",
 		coap.FuncHandler(func(l *net.UDPConn, a *net.UDPAddr, m *coap.Message) *coap.Message {
-			log.Printf("Got message path=%q: PayLoad: %#v from %v Code: %v", m.Path(), string(m.Payload), a, m.Code)
+			//log.Printf("Got message path=%q: PayLoad: %#v from %v Code: %v", m.Path(), string(m.Payload), a, m.Code)
 			if len(m.Path()) > 0 {
 
 				switch m.Path()[0] {
@@ -39,7 +37,6 @@ func StartServer() {
 					res := evalTuple(m)
 					return res
 				default:
-					//res := proxyRequestHandler(m)
 					res := notFoundHandler(m)
 					return res
 
@@ -55,12 +52,12 @@ func StartServer() {
 func inTuple(m *coap.Message) *coap.Message {
 
 	tupleData := payloadToTuple(m.Payload)
-	log.Printf("Searching tuple %v",tupleData)
+	//log.Printf("Searching tuple %v",tupleData)
 
 	recv1 := space.Take(tupleSpace.NewJS(0, tupleData))
 	t1 := <- recv1
 
-	log.Printf("Tuple found: %v", t1)
+	//log.Printf("Tuple found: %v", t1)
 	payload := tupleToPayload(t1)
 
 	res := &coap.Message{
@@ -77,12 +74,12 @@ func rdTuple(m *coap.Message) *coap.Message {
 
 
 	tupleData := payloadToTuple(m.Payload)
-	log.Printf("Searching tuple %v",tupleData)
+	//log.Printf("Searching tuple %v",tupleData)
 
 	recv1 := space.Read(tupleSpace.NewJS(0, tupleData))
 	t1 := <- recv1
 
-	log.Printf("Tuple found: %v", t1)
+	//log.Printf("Tuple found: %v", t1)
 	payload := tupleToPayload(t1)
 
 	res := &coap.Message{
@@ -98,7 +95,7 @@ func rdTuple(m *coap.Message) *coap.Message {
 func outTuple(m *coap.Message) *coap.Message {
 	tupleData := payloadToTuple(m.Payload)
 	tuple := tupleSpace.NewJS(600, tupleData)
-	log.Printf("Outing tuple: %v.",tuple)
+	//log.Printf("Outing tuple: %v",tuple)
 
 	space.Write(tuple)
 
@@ -117,10 +114,10 @@ func evalTuple(m *coap.Message) *coap.Message {
 
 	res := &coap.Message{
 		Type:      coap.Acknowledgement,
-		Code:      coap.NotFound,
+		Code:      coap.NotImplemented,
 		MessageID: m.MessageID,
 		Token:     m.Token,
-		Payload:   []byte("4.05"),
+		Payload:   []byte("5.01"),
 	}
 	res.SetOption(coap.ContentFormat, coap.TextPlain)
 	return res
