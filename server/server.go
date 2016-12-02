@@ -52,7 +52,7 @@ func StartServer() {
 func inTuple(m *coap.Message) *coap.Message {
 
 	tupleData := payloadToTuple(m.Payload)
-	//log.Printf("Searching tuple %v",tupleData)
+	log.Printf("Searching tuple %v",tupleData)
 
 	recv1 := space.Take(tupleSpace.NewJS(0, tupleData))
 	t1 := <- recv1
@@ -74,7 +74,7 @@ func rdTuple(m *coap.Message) *coap.Message {
 
 
 	tupleData := payloadToTuple(m.Payload)
-	//log.Printf("Searching tuple %v",tupleData)
+	log.Printf("Searching tuple %v",tupleData)
 
 	recv1 := space.Read(tupleSpace.NewJS(0, tupleData))
 	t1 := <- recv1
@@ -95,7 +95,7 @@ func rdTuple(m *coap.Message) *coap.Message {
 func outTuple(m *coap.Message) *coap.Message {
 	tupleData := payloadToTuple(m.Payload)
 	tuple := tupleSpace.NewJS(600, tupleData)
-	//log.Printf("Outing tuple: %v",tuple)
+	log.Printf("Outing tuple: %v",tuple)
 
 	space.Write(tuple)
 

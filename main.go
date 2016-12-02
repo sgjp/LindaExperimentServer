@@ -1,66 +1,123 @@
 package main
 
-
 import (
-	"github.com/sgjp/LindaExperimentServer/server"
-
-	"github.com/sgjp/LindaExperimentServer/tupleSpace"
-	"reflect"
+	"github.com/sgjp/LindaExperimentClient2/client"
 	"log"
+	"strings"
+	"strconv"
+	"time"
+	"os"
+	"encoding/csv"
 )
 
+var mode int
+var primeNumsQty int
+var taskDurationFile = "sgjp/LindaExperimentClient2/TaskDuration.csv"
+
 func main() {
+	//mode sets the device to Worker: 0 or Manager: 1
+	mode = 1;
 
-	//testTupleSpace()
+	//sets the number of prime numbers needed, this only applies for when the device is set to 1 Manager
+	primeNumsQty = 1000
 
-	server.StartServer()
+	start()
+
 }
 
-func testTupleSpace(){
-	var space tupleSpace.TupleSpace
+func start(){
+	if mode ==1{
+		log.Printf("Starting as manager, generating W tuples...")
+		//Generate requests for primer numbers
+		for i:=1;i<=primeNumsQty;i++{
+			log.Printf("Writing tuple: %v","W,"+strconv.Itoa(i))
+			client.OutTuple("W,"+strconv.Itoa(i))
+		}
+		log.Printf("Searching for results...")
+		i := 1
 
-	space = tupleSpace.NewSpace()
+		//Check for the same ammount of results
+		t := time.Now()
+		for true{
+			tuple := client.InTuple("R")
+			if tuple != "0"{
+				//log.Printf("Adding to i, Proccessed Tuple found: %v",tuple)
+				i++
+			}else{
+			}
+			//log.Printf("i: %v",i)
+			if i>primeNumsQty{
+				break
+			}
 
-	//tupleModel := tupleSpace.New(600,1,2)
-	//space.Write(tupleModel)
+		}
+		elapsed := time.Since(t)
+		log.Printf("Prime numbers calculated!, it took %v",elapsed)
+		saveTaskDuration(elapsed,primeNumsQty)
+	}else{
+		//Get requests, process them and return the result
+		var tuplesToSend []string
+		i := 1
+		log.Printf("Starting as worker, looking for W tuples...")
+		for  {
+			tuple := client.InTuple("W")
+			if tuple != "0"{
+				i++
+				splittedTuple := strings.Split(tuple,",")
+				qty, err := strconv.Atoi(splittedTuple[1])
+				if err!= nil{
+					log.Printf("Error parsing tuple %v",err)
+				}
+				result := calcPrimeNumber(qty)
 
-	recv1 := space.Take(tupleSpace.New(0, 1))
-	t1 := <-recv1
+				tuplesToSend = append(tuplesToSend,"R,"+splittedTuple[1]+","+strconv.Itoa(result))
+			}
+			if i>primeNumsQty{
+				break
+			}
+		}
+		for b:=0;b<=len(tuplesToSend)-1;b++{
+			//log.Printf("Writing tuple: %v", tuplesToSend[b])
+			client.OutTuple(tuplesToSend[b])
+		}
+		log.Printf("Finished working !")
 
-	if !reflect.DeepEqual(t1.Values(), []interface{}{1, 2}) {
-		log.Print(`failed to Read from TupleSpace.`)
 	}
-
-	log.Printf("Read%v", t1)
-
-	recv2 := space.Take(tupleSpace.New(0, 1))
-	t2 := <-recv2
-
-	if !reflect.DeepEqual(t2.Values(), []interface{}{1, 2}) {
-		log.Print(`failed to Read from TupleSpace.`)
-	}
-
-	log.Printf("Read%v", t2)
-
-	recv3 := space.Read(tupleSpace.New(0, 1))
-	t3 := <-recv3
-
-	if !reflect.DeepEqual(t3.Values(), []interface{}{1, 2}) {
-		log.Print(`failed to Read from TupleSpace.`)
-	}
-
-	log.Printf("Read%v", t3)
-
-
-	/*recv2 := space.Take(tupleSpace.New(0, `foo`))
-
-if t2 := <-recv2; !reflect.DeepEqual(t2.Values(), []interface{}{`foo`, `bar`}) {
-	log.Print(`failed to Take from TupleSpace.`)
 }
 
-if space.Len() > 0 {
-	log.Print(`remove tuple from Take method is failed.`)
+
+func calcPrimeNumber(qty int) int {
+	var num int
+	for i := 2; i < qty; i++ {
+		for j := 2; j < i; j++ {
+			if i%j == 0 {
+				break
+			} else if i == j+1 {
+				num = i
+			}
+		}
+	}
+	return num
 }
 
-*/
+func saveTaskDuration(elapsed time.Duration, qty int){
+	record := []string{
+		strconv.Itoa(qty), elapsed.String()}
+
+	file, er := os.OpenFile(taskDurationFile, os.O_RDWR|os.O_APPEND, 0666)
+
+	if er != nil {
+		log.Fatal(er)
+	}
+	defer file.Close()
+	writer := csv.NewWriter(file)
+
+	err := writer.Write(record)
+
+
+	if err != nil {
+		log.Fatal(er)
+	}
+
+	defer writer.Flush()
 }
