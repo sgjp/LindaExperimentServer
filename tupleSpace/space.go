@@ -4,7 +4,6 @@ import (
 	//"code.google.com/p/go-uuid/uuid"
 	"github.com/pborman/uuid"
 	"sync"
-	//"log"
 )
 
 type TupleSpace interface {
@@ -45,15 +44,26 @@ func (tM *tupleManager) Take(tuple Tuple, receiver chan Tuple) {
 		t := tM.tuples[i]
 		if t.Match(tuple) && !t.IsExpired() {
 			if i == 0 {
-				tM.tuples = make([]Tuple, 0)
+				tM.tuples = tM.tuples[1:]
+
 			} else {
-				tM.tuples = tM.tuples[:i]
+
+				newTuples := make([]Tuple, 0)
+				for ii,tup := range tM.tuples {
+					if ii != i{
+						newTuples = append(newTuples,tup)
+					}
+				}
+				//tuplesHalf1 := tM.tuples[:i]
+				//tuplesHalf2 := tM.tuples[i:]
+				//tM.tuples = tM.tuples[:i]
+				tM.tuples = newTuples
 			}
 
 			receiver <- t
 
 
-			//log.Printf("Tuple found: %v", t)
+
 			return
 		}
 	}
